@@ -4853,6 +4853,8 @@ dependencies = [
  "dioxus",
  "futures",
  "gloo-net",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
