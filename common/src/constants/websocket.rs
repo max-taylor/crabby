@@ -1,1 +1,1 @@
-pub const WEBSOCKET_PORT: u16 = 8080;
+pub const WEBSOCKET_PORT: u16 = 8081;

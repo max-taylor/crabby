@@ -10,4 +10,4 @@ run-web:
   cd web && dx serve
 
 run-server:
-  cd server && cargo watch -q -c -x run | sed 's/^/[server] /'
+  cd server && RUST_LOG=info RUSTFLAGS="-Awarnings" cargo watch -q -c -x run | sed 's/^/[server] /'

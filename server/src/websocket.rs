@@ -9,7 +9,7 @@ use tokio::{
 };
 use tokio_tungstenite::{WebSocketStream, accept_async, tungstenite::Message};
 
-use crate::server_state::{Connection, ServerStateTS};
+use crate::server_state::ServerStateTS;
 
 pub async fn spawn_websocket_server(
     server_state: ServerStateTS,
@@ -20,6 +20,7 @@ pub async fn spawn_websocket_server(
 
     let handler = tokio::spawn(async move {
         loop {
+            println!("Waiting for connection...");
             let listener_value = listener.accept().await;
 
             if let Err(e) = listener_value {
@@ -32,17 +33,17 @@ pub async fn spawn_websocket_server(
             let server_state = server_state.clone();
 
             tokio::spawn(async move {
-                println!("New connection from: {}", socket_addr);
+                info!("New connection from: {}", socket_addr);
 
                 let ws_stream = accept_async(stream).await.expect("Failed to accept");
 
-                let (ws_sender, ws_receiver) = ws_stream.split();
-                let id = server_state.lock().await.add_connection(Connection {
-                    ws_send: ws_sender,
-                    socket_addr,
-                });
+                let (ws_send, ws_receive) = ws_stream.split();
+                let id = server_state
+                    .lock()
+                    .await
+                    .add_connection(ws_send, socket_addr);
 
-                if let Err(e) = handle_connection(ws_receiver, server_state, id).await {
+                if let Err(e) = handle_connection(ws_receive, server_state, id).await {
                     let custom_error = e.downcast_ref::<tokio_tungstenite::tungstenite::Error>();
                     match custom_error {
                         Some(tokio_tungstenite::tungstenite::Error::ConnectionClosed) => {
@@ -59,12 +60,12 @@ pub async fn spawn_websocket_server(
 }
 
 pub async fn handle_connection(
-    mut ws_receiver: SplitStream<WebSocketStream<TcpStream>>,
+    mut ws_receive: SplitStream<WebSocketStream<TcpStream>>,
     server_state: ServerStateTS,
     id: Uuid,
 ) -> CrateResult<()> {
     loop {
-        if let Some(msg) = ws_receiver.next().await {
+        if let Some(msg) = ws_receive.next().await {
             let msg = msg?;
             match msg {
                 Message::Text(text) => {

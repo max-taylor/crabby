@@ -1,0 +1,1 @@
+pub const WEBSOCKET_UPDATE_RATE_MS: u64 = 500;
