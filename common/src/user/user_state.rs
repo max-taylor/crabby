@@ -1,19 +1,19 @@
 use serde::{Deserialize, Serialize};
 
+use crate::types::position::Position;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UserState {
-    pub x: i64,
-    pub y: i64,
+    pub position: Position,
     pub direction_deg: u64,
 }
 
-pub const MAX_SPEED: i64 = 100;
+pub const MAX_SPEED: i64 = 5;
 
 impl UserState {
     pub fn new() -> Self {
         UserState {
-            x: 0,
-            y: 0,
+            position: Position { x: 0, y: 0 },
             direction_deg: 0,
         }
     }
@@ -30,9 +30,8 @@ impl UserState {
         let dx = (distance as f64 * radians.cos()).round() as i64;
         let dy = (distance as f64 * radians.sin()).round() as i64;
 
-        // Update position
-        self.x += dx;
-        self.y += dy;
+        self.position.x += dx;
+        self.position.y += dy;
     }
 }
 //

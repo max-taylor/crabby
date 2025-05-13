@@ -19,7 +19,6 @@ pub fn spawn_server_state_dispatcher(
             let mut server_state = server_state.lock().await;
             let time_diff_ms = last_update.elapsed().as_millis() as u64;
 
-            info!("Updating server state with time diff: {}", time_diff_ms);
             server_state.update(WEBSOCKET_UPDATE_RATE_MS).await;
         }
         //

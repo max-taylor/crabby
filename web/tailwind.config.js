@@ -6,4 +6,5 @@ module.exports = {
     extend: {},
   },
   plugins: [],
+  safelist: ["top-[0px]", "left-[68px]"],
 };

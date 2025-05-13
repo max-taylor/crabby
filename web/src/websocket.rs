@@ -1,20 +1,21 @@
 use common::user::user_state::UserState;
 use dioxus::{
-    hooks::{use_context_provider, use_signal},
-    logger::tracing::info,
-    prelude::{spawn, use_hook},
+    hooks::{use_context, use_context_provider},
+    logger::tracing::{self},
+    prelude::{rsx, spawn, use_hook},
     signals::{Signal, Writable},
 };
-use futures::{SinkExt, StreamExt};
+use futures::StreamExt;
 use gloo_net::websocket::futures::WebSocket;
 use gloo_net::websocket::Message;
-// use wasm_bindgen_futures::spawn_local;
 
-pub fn use_websocket() -> Signal<UserState> {
-    let mut user_state = use_signal(|| UserState::new());
+pub fn use_websocket() {
+    use_context_provider::<Signal<Option<UserState>>>(|| Signal::new(None));
+
+    let mut user_state = use_context::<Signal<Option<UserState>>>();
 
     use_hook(|| {
-        // TODO: FOrmat correctly
+        // TODO: FOrmat correctlkjjqiy
         let ws = WebSocket::open("ws://127.0.0.1:8081").unwrap();
         let (mut write, mut read) = ws.split();
 
@@ -22,41 +23,38 @@ pub fn use_websocket() -> Signal<UserState> {
             loop {
                 let msg = read.next().await;
                 match msg {
-                    Some(Ok(msg)) => {
-                        info!("Received message: {:?}", msg);
-                        match msg {
-                            Message::Text(text) => {
-                                let state = serde_json::from_str::<UserState>(&text);
+                    Some(Ok(msg)) => match msg {
+                        Message::Text(text) => {
+                            let received_state = serde_json::from_str::<UserState>(&text);
 
-                                match state {
-                                    Ok(state) => {
-                                        user_state.set(state);
-                                        // info!("User state updated: {:?}", &user_state);
-                                    }
-                                    Err(e) => {
-                                        println!("Error parsing user state: {}", e);
+                            match received_state {
+                                Ok(received_state) => {
+                                    let updated_state = user_state();
+
+                                    if let Some(mut updated_state) = updated_state {
+                                        updated_state.position = received_state.position;
+
+                                        user_state.set(Some(updated_state));
+                                    } else {
+                                        user_state.set(Some(received_state));
                                     }
                                 }
-                                info!("Text message: {}", text);
+                                Err(e) => {
+                                    tracing::error!("Error parsing user state: {}", e);
+                                }
                             }
-                            _ => {}
                         }
-                    }
+                        _ => {}
+                    },
                     Some(Err(e)) => {
-                        println!("Error receiving message: {}", e);
+                        tracing::error!("Error receiving message: {}", e);
                         break;
                     }
                     None => {
-                        println!("No message received");
-                        break;
+                        tracing::error!("No message received");
                     }
                 }
             }
         });
-        // This is a placeholder for the actual implementation.
-        // In a real-world scenario, this function would contain logic to handle WebSocket messages.
-        println!("WebSocket message handler set up.");
     });
-
-    return user_state;
 }

@@ -1,4 +1,5 @@
-use dioxus::{logger::tracing, prelude::*};
+use common::{types::position::Position, user::user_state::UserState};
+use dioxus::{logger::tracing::info, prelude::*};
 use websocket::use_websocket;
 mod websocket;
 
@@ -19,9 +20,7 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let user_state = use_websocket();
-
-    tracing::info!("User state: {:?}", user_state);
+    use_websocket();
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
@@ -33,19 +32,38 @@ fn App() -> Element {
 /// Home page
 #[component]
 fn Home() -> Element {
+    let user_state = use_context::<Signal<Option<UserState>>>();
+    let mut cursor = use_signal(|| Position { x: 0, y: 0 });
+
+    let mut top = "0px".to_string();
+    let mut left = "0px".to_string();
+    if let Some(user_state) = user_state() {
+        top = user_state.position.y.to_string() + "px";
+        left = user_state.position.x.to_string() + "px";
+    }
+
+    info!("Cursor position: {:?}", cursor);
+
     rsx! {
         div {
-            class: "flex flex-col items-center justify-center min-h-screen bg-gray-100",
+            class: "h-screen w-screen",
+            onpointermove: move |event| {
+                    // // Get element-relative coordinates
+                    // let element_coords = event.element_coordinates();
+                    // element_x.set(element_coords.x as i32);
+                    // element_y.set(element_coords.y as i32);
+
+                    // If we wanted to update the global position too:
+                    let client_coords = event.client_coordinates();
+                    cursor.set(Position {
+                        x: client_coords.x as i64,
+                        y: client_coords.y as i64,
+                    });
+                },
             div {
-                min_height: 200,
-                min_width: 200,
-            height: 200,
-            width: 200,
-                background: "linear-gradient(to right, #4f46e5, #3b82f6)",
-            }
-            p {
-                class: "mt-4 text-lg text-gray-600",
-                "This is a simple example of using WebSockets in a Dioxus application."
+                class: "absolute min-w-8 min-h-8 bg-gray-100 rounded-full",
+                top: top,
+                left: left,
             }
         }
     }

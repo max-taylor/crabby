@@ -9,10 +9,12 @@ edition = "2021"
 [dependencies]
 common = { version = "0.1.0", path = "../common" }
 dioxus = { version = "0.6.0", features = ["router"] }
+dioxus-use-cursor = "=0.2.0"
 futures = "0.3.31"
 gloo-net = { version = "0.6.0", features = ["websocket"] }
 serde = { version = "1.0.219", default-features = false, features = ["alloc"] }
 serde_json = { version = "1.0.140", default-features = false, features = ["alloc"] }
+wasm-bindgen = "0.2.100"
 
 [features]
 default = ["web"]
