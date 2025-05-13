@@ -6,7 +6,7 @@ dev:
     "just run-tailwind"
 
 run-web:
-  cd web && dx serve
+  cd web && dx serve --platform web
 
 run-server:
   cd server && RUST_LOG=info RUSTFLAGS="-Awarnings" cargo watch -q -c -x run | sed 's/^/[server] /'
