@@ -1,4 +1,4 @@
-use common::types::result::CrateResult;
+use common::{types::result::CrateResult, user::user_state::UserState};
 use uuid::Uuid;
 
 use futures_util::{StreamExt, stream::SplitStream};
@@ -70,7 +70,19 @@ pub async fn handle_connection(
             match msg {
                 Message::Text(text) => {
                     info!("Received text message: {}", text);
-                    // Handle text message
+                    let user_state = serde_json::from_str::<UserState>(&text);
+
+                    match user_state {
+                        Ok(user_state) => {
+                            server_state
+                                .lock()
+                                .await
+                                .update_connection_direction(id, user_state.direction_deg);
+                        }
+                        Err(e) => {
+                            error!("Error parsing user state: {}", e);
+                        }
+                    }
                 }
                 Message::Binary(_) => {
                     info!("Received binary message");

@@ -1,6 +1,6 @@
 use common::user::user_state::UserState;
 use futures_util::SinkExt;
-use log::error;
+use log::{error, info, warn};
 use std::net::SocketAddr;
 use std::{collections::HashMap, sync::Arc};
 use tokio::net::TcpStream;
@@ -49,11 +49,33 @@ impl ServerState {
         uuid
     }
 
+    pub fn remove_connection(&mut self, uuid: Uuid) {
+        self.connections.remove(&uuid);
+    }
+
+    pub fn update_connection_direction(&mut self, uuid: Uuid, direction_deg: u64) -> Option<()> {
+        if let Some(connection) = self.connections.get_mut(&uuid) {
+            info!(
+                "Updating connection direction for {}: {}",
+                uuid, direction_deg
+            );
+            connection.user_state.direction_deg = direction_deg;
+            Some(())
+        } else {
+            // TODO: How to handle this, reconnect, or simply remove?
+            warn!("Connection not found for UUID: {}", uuid);
+
+            None
+        }
+    }
+
     pub async fn update(&mut self, time_diff_ms: u64) {
         // This will get way more complicated with checking collisions and updating
         for (_, connection) in self.connections.iter_mut() {
             connection.user_state.update(time_diff_ms);
         }
+
+        let mut ids_to_remove: Vec<Uuid> = vec![];
 
         for (uuid, connection) in self.connections.iter_mut() {
             let user_state_json = serde_json::to_string(&connection.user_state);
@@ -65,10 +87,18 @@ impl ServerState {
 
             let user_state_json = user_state_json.unwrap();
             let message = Message::Text(user_state_json.into());
+
             if let Err(e) = connection.ws_send.send(message).await {
+                // TODO: Remove connection
                 error!("Error sending message to {}: {}", uuid, e);
+
+                ids_to_remove.push(*uuid);
                 continue;
             }
+        }
+
+        for uuid in ids_to_remove {
+            self.remove_connection(uuid);
         }
     }
 

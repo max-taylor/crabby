@@ -22,7 +22,7 @@ pub fn use_websocket() -> (Signal<Option<UserState>>, Signal<Position>) {
         let (write, read) = ws.split();
 
         spawn_sync_local_state(read, user_state.clone());
-        spawn_sync_server_state(write, user_state.clone());
+        spawn_sync_server_state(write, user_state.clone(), cursor_position.clone());
     });
 
     (user_state, cursor_position)
