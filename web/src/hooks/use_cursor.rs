@@ -1,3 +1,4 @@
+use common::types::position::Position;
 use dioxus::prelude::*;
 use dioxus::{
     hooks::use_effect,
@@ -6,16 +7,9 @@ use dioxus::{
 use wasm_bindgen::{prelude::*, JsCast};
 use web_sys::js_sys::Function;
 
-/// A struct to hold cursor position data
-#[derive(Clone, Debug, PartialEq, Default)]
-pub struct CursorPosition {
-    pub x: i32,
-    pub y: i32,
-}
-
 /// A hook that tracks cursor position within the browser window
-pub fn use_cursor_position() -> Signal<CursorPosition> {
-    let position = use_signal(CursorPosition::default);
+pub fn use_cursor_position() -> Signal<Position> {
+    let position = use_signal(Position::default);
 
     use_effect(move || {
         // Create a stable reference to the signal
@@ -23,9 +17,9 @@ pub fn use_cursor_position() -> Signal<CursorPosition> {
 
         // Create a closure that updates the position when the mouse moves
         let callback = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
-            position.set(CursorPosition {
-                x: event.client_x(),
-                y: event.client_y(),
+            position.set(Position {
+                x: event.client_x() as i64,
+                y: event.client_y() as i64,
             });
         }) as Box<dyn FnMut(web_sys::MouseEvent)>);
 
