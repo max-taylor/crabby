@@ -7,6 +7,7 @@ use dioxus::{
 use futures::{stream::SplitStream, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
 
+// Listen to messages received from the websocket server and update the local user_state
 pub fn spawn_sync_local_state(
     mut read: SplitStream<WebSocket>,
     mut user_state: Signal<Option<UserState>>,

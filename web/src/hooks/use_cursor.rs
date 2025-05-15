@@ -1,52 +1,67 @@
-use dioxus::prelude::MouseEvent;
-use dioxus::signals::Writable;
+use dioxus::prelude::*;
 use dioxus::{
-    hooks::{use_effect, use_signal},
-    signals::Signal,
+    hooks::use_effect,
+    signals::{Signal, Writable},
 };
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
+use web_sys::js_sys::Function;
 
-// Create a struct to hold cursor position
-#[derive(Clone, Debug, PartialEq)]
-struct CursorPosition {
-    x: i32,
-    y: i32,
+/// A struct to hold cursor position data
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct CursorPosition {
+    pub x: i32,
+    pub y: i32,
 }
 
-// JavaScript interop to get cursor position
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = window)]
-    fn addEventListener(event: &str, callback: &Closure<dyn FnMut(JsValue)>);
-}
+/// A hook that tracks cursor position within the browser window
+pub fn use_cursor_position() -> Signal<CursorPosition> {
+    let position = use_signal(CursorPosition::default);
 
-// Alternative implementation using a hook
-fn use_cursor_position() -> Signal<CursorPosition> {
-    let mut position = use_signal(|| CursorPosition { x: 0, y: 0 });
+    use_effect(move || {
+        // Create a stable reference to the signal
+        let mut position = position.clone();
 
-    // use_effect(move || {
-    //     let pos = position.clone();
-    //
-    //     let closure = Closure::wrap(Box::new(move |event: JsValue| {
-    //         let event = MouseEvent::from(event);
-    //         pos.set(CursorPosition {
-    //             x: event.client_x(),
-    //             y: event.client_y(),
-    //         });
-    //     }) as Box<dyn FnMut(JsValue)>);
-    //
-    //     let window = web_sys::window().unwrap();
-    //     let document = window.document().unwrap();
-    //     document
-    //         .add_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())
-    //         .unwrap();
-    //
-    //     move || {
-    //         document
-    //             .remove_event_listener_with_callback("mousemove", closure.as_ref().unchecked_ref())
-    //             .unwrap();
-    //     }
-    // });
+        // Create a closure that updates the position when the mouse moves
+        let callback = Closure::wrap(Box::new(move |event: web_sys::MouseEvent| {
+            position.set(CursorPosition {
+                x: event.client_x(),
+                y: event.client_y(),
+            });
+        }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+
+        // Get window and document objects
+        let window = web_sys::window().expect("No global window exists");
+        let document = window.document().expect("No document exists on window");
+
+        // Properly cast the closure to a JS function and add the event listener
+        let listener: &Function = callback.as_ref().unchecked_ref();
+        document
+            .add_event_listener_with_callback("mousemove", listener)
+            .expect("Failed to add event listener");
+
+        // Store the callback so it won't be dropped
+        let callback = callback.forget();
+
+        // Return cleanup function - note: no move closure here, just a direct return
+        // || {
+        //     if let Some(window) = web_sys::window() {
+        //         if let Some(document) = window.document() {
+        //             // When unmounting, remove the event listener to prevent memory leaks
+        //             let _ = document.remove_event_listener_with_callback("mousemove", listener);
+        //         }
+        //     }
+        // }
+
+        // // Return cleanup function that properly removes the event listener
+        // move || {
+        //     if let Ok(document) = window.document() {
+        //         // When unmounting, remove the event listener to prevent memory leaks
+        //         let _ = document.remove_event_listener_with_callback("mousemove", listener);
+        //     }
+        //     // Explicitly drop the closure to free memory
+        //     drop(callback);
+        // }
+    });
 
     position
 }

@@ -1,6 +1,7 @@
 use common::{types::position::Position, user::user_state::UserState};
 use dioxus::{logger::tracing::info, prelude::*};
 use websocket::use_websocket;
+mod hooks;
 mod websocket;
 mod workers;
 
