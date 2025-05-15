@@ -15,7 +15,7 @@ pub fn spawn_sync_server_state(
 ) {
     spawn(async move {
         loop {
-            TimeoutFuture::new(300).await;
+            TimeoutFuture::new(50).await;
 
             if user_state_signal().is_none() {
                 continue;
@@ -29,7 +29,7 @@ pub fn spawn_sync_server_state(
                 position: user_state.position,
                 direction_deg: direction as u64,
             };
-            updated_state.update(300);
+            updated_state.update(100);
 
             let user_state_json = serde_json::to_string(&updated_state);
 

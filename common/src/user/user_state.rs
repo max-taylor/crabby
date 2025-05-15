@@ -8,7 +8,7 @@ pub struct UserState {
     pub direction_deg: u64,
 }
 
-pub const MAX_SPEED: i64 = 25;
+pub const MAX_SPEED: i64 = 100;
 
 impl UserState {
     pub fn new() -> Self {
