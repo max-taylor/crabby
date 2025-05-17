@@ -103,10 +103,6 @@ pub async fn handle_connection(
                 }
                 _ => {}
             }
-            // // Intentionally ignore errors here, as we don't want to drop the connection
-            // if let Err(e) = handle_loop(msg, server_state.clone()).await {
-            //     error!("Error handling message: {:?}", e);
-            // }
         } else {
             return Err(tokio_tungstenite::tungstenite::Error::ConnectionClosed.into());
         }

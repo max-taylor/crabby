@@ -1,4 +1,7 @@
-use common::{types::position::Position, user::user_state::UserState};
+use common::{
+    types::position::Position,
+    user::user_state::{ControlEvent, UserState},
+};
 use dioxus::{
     hooks::{use_context_provider, use_signal},
     prelude::use_hook,
@@ -15,7 +18,7 @@ pub fn use_websocket() -> (Signal<Option<UserState>>, Signal<Position>) {
     use_context_provider::<Signal<Option<UserState>>>(|| Signal::new(None));
 
     let user_state = use_signal::<Option<UserState>>(|| None);
-    let cursor_position = use_signal(|| Position::default());
+    let mut key_event: Signal<Option<ControlEvent>> = use_signal(|| None);
 
     use_hook(|| {
         let ws = WebSocket::open("ws://127.0.0.1:8081").unwrap();

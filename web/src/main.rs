@@ -1,6 +1,8 @@
 use common::types::position::Position;
+use components::crab::Crab;
 use dioxus::prelude::*;
 use websocket::use_websocket;
+mod components;
 mod hooks;
 mod websocket;
 mod workers;
@@ -10,25 +12,56 @@ const MAIN_CSS: Asset = asset!("/assets/main.css");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
 fn main() {
-    dioxus::launch(App);
+    dioxus::launch(Layout);
+}
+
+#[component]
+fn Layout() -> Element {
+    rsx!(
+        document::Link { rel: "icon", href: FAVICON }
+        document::Link { rel: "stylesheet", href: MAIN_CSS }
+        document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+
+        App { }
+    )
 }
 
 #[component]
 fn App() -> Element {
     let (user_state, mut cursor_position) = use_websocket();
 
-    let mut top = "0px".to_string();
-    let mut left = "0px".to_string();
-    if let Some(user_state) = user_state() {
-        top = user_state.position.y.to_string() + "px";
-        left = user_state.position.x.to_string() + "px";
+    if user_state().is_none() {
+        return rsx!(
+            div {
+                class: "h-screen w-screen flex items-center justify-center",
+                "Loading..."
+            }
+        );
     }
 
+    let user_state = user_state().unwrap();
+
     rsx! {
-        document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS } document::Link { rel: "stylesheet", href: TAILWIND_CSS }
         div {
             class: "h-screen w-screen",
+            onkeydown: move |event| {
+                // Handle key down events
+                match event.key() {
+                    Key::ArrowUp => key_event.set(Some(ControlEvent::ArrowUp)),
+                    Key::ArrowDown => key_event.set(Some(ControlEvent::ArrowDown)),
+                    Key::ArrowLeft => key_event.set(Some(ControlEvent::ArrowLeft)),
+                    Key::ArrowRight => key_event.set(Some(ControlEvent::ArrowRight)),
+                    Key::Character(val) => {
+                        if val == " " {
+                            key_event.set(Some(ControlEvent::Space));
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            onkeyup: move |_| {
+                key_event.set(None);
+            },
             onpointermove: move |event| {
                     // Get global coordinates
                     let client_coords = event.client_coordinates();
@@ -38,11 +71,7 @@ fn App() -> Element {
                     });
                 },
 
-            div {
-                class: "absolute min-w-8 min-h-8 bg-gray-100 rounded-full",
-                top: top,
-                left: left,
-            }
+            Crab {position: user_state.position}
         }
     }
 }
